@@ -1,0 +1,64 @@
+*{
+    margin: 0%;
+    padding: 0%;
+    user-select: none;
+}
+.containar{
+    display: grid;
+    align-items: center;
+    justify-content: center;
+}
+#taskInput{
+    width: 10cm;
+    height: 1cm;
+    font-size: 30px;
+}
+#addTask{
+    background-color: blue;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+@media screen and (max-width: 376px) {
+    /* STYLES HERE */
+    #taskInput{
+        width: 8cm;
+    }
+    li{
+        width: 100px;
+       }
+}
+
+li{
+    background-color: rgba(231, 223, 223, 0.586);
+    width: auto;
+    font-size: 18px;
+    list-style-type: none;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+
+    /* Handle long text */
+    word-wrap: break-word; /* Break long words */
+    white-space: normal; /* Allow wrapping on spaces */
+    max-width: 400px; /* Optional: Set a max width */
+    overflow-wrap: break-word; /* Break long words */
+}
+.deleteTask{
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    float: right;
+}
+@media screen and (max-width: 321px) {
+    /* STYLES HERE */
+   input{
+    margin-left: 50px;
+   }
+   li{
+    width: 200px;
+   }
+}
