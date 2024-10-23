@@ -1,51 +1,95 @@
+let addButton = document.getElementById("addTask");
+let taskInput = document.getElementById("taskInput");
+let taskList = document.getElementById("taskList");
 
-        let addButton = document.getElementById("addTask");
-        let taskInput = document.getElementById("taskInput");
-        let taskList = document.getElementById("taskList");
+// Open (or create) the IndexedDB database
+let db;
+let request = indexedDB.open("taskDB", 1);
 
-        loadTasks(); // Load tasks when the page loads
+request.onerror = function(event) {
+    console.log("Error opening IndexedDB:", event);
+};
 
-        function addTask() {
-            let task = taskInput.value.trim();
+request.onsuccess = function(event) {
+    db = event.target.result;
+    loadTasks(); // Load tasks when the page loads
+};
 
-            if (task) {
-                createTaskElement(task);
-                taskInput.value = "";
-                saveTasks(); // Save after adding task
-            } else {
-                alert("Please enter the task....");
-            }
+request.onupgradeneeded = function(event) {
+    db = event.target.result;
+    let objectStore = db.createObjectStore("tasks", { keyPath: "id", autoIncrement: true });
+    objectStore.createIndex("task", "task", { unique: false });
+};
+
+function addTask() {
+    let task = taskInput.value.trim();
+
+    if (task) {
+        createTaskElement(task);
+        taskInput.value = "";
+        saveTask(task); // Save after adding task
+    } else {
+        alert("Please enter the task....");
+    }
+}
+
+addButton.addEventListener("click", addTask);
+
+function createTaskElement(task) {
+    let listItem = document.createElement("li");
+    listItem.textContent = task;
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = 'Delete';
+    deleteButton.className = "deleteTask";
+    listItem.appendChild(deleteButton);
+
+    deleteButton.addEventListener("click", () => {
+        taskList.removeChild(listItem);
+        deleteTask(task); // Delete from IndexedDB
+    });
+
+    taskList.appendChild(listItem);
+}
+
+function saveTask(task) {
+    let transaction = db.transaction(["tasks"], "readwrite");
+    let objectStore = transaction.objectStore("tasks");
+
+    let request = objectStore.add({ task: task });
+    request.onerror = function(event) {
+        console.log("Error saving task:", event);
+    };
+    request.onsuccess = function(event) {
+        console.log("Task saved to IndexedDB");
+    };
+}
+
+function loadTasks() {
+    let transaction = db.transaction(["tasks"], "readonly");
+    let objectStore = transaction.objectStore("tasks");
+
+    objectStore.openCursor().onsuccess = function(event) {
+        let cursor = event.target.result;
+        if (cursor) {
+            createTaskElement(cursor.value.task); // Create element for each stored task
+            cursor.continue();
         }
+    };
+}
 
-        addButton.addEventListener("click", addTask);
+function deleteTask(task) {
+    let transaction = db.transaction(["tasks"], "readwrite");
+    let objectStore = transaction.objectStore("tasks");
 
-        function createTaskElement(task) {
-            let listItem = document.createElement("li");
-            listItem.textContent = task;
+    let index = objectStore.index("task");
+    let request = index.openCursor(IDBKeyRange.only(task));
 
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = 'Delete';
-            deleteButton.className = "deleteTask";
-            listItem.appendChild(deleteButton);
-
-            deleteButton.addEventListener("click", () => {
-                taskList.removeChild(listItem);
-                saveTasks(); // Save after deleting task
-            });
-
-            taskList.appendChild(listItem);
+    request.onsuccess = function(event) {
+        let cursor = event.target.result;
+        if (cursor) {
+            objectStore.delete(cursor.primaryKey); // Delete the task
+            console.log("Task deleted from IndexedDB");
         }
-
-        function saveTasks() {
-            let tasks = [];
-            taskList.querySelectorAll('li').forEach(function (item) {
-                tasks.push(item.firstChild.textContent.trim()); // Ensures we only save the task text, not the 'Delete' button
-            });
-
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-        }
-
-        function loadTasks() {
-            const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-            tasks.forEach(createTaskElement);
-        }
+    };
+}
